@@ -96,7 +96,7 @@ contract TheRewarder is Test {
          */
         vm.startPrank(attacker);
 
-        address rewardTokenAddress = theRewarderPool.rewardToken.address;
+        address rewardTokenAddress = address(theRewarderPool.rewardToken());
         attack = new Attack(theRewarderPool, dvt, flashLoanerPool, RewardToken(rewardTokenAddress));
 
         vm.warp(block.timestamp + 10 days);
